@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="structure-JSF" default="help" basedir=".">
+	<!-- Define the properties used by the build -->
+  <property name="app.name"      value="structureWeb"/>
+  <property name="app.version"   value="0.1-dev"/>
+  <property name="tcserver.home" value="E:/Software/apache-tomcat-7.0.32" />
+  <property name="tcserver.webapps" value="${tcserver.home}/webapps" />
+  <property name="jsf.lib"       value="E:/Software/myfaces-core-2.1.5-bin/lib" />
+  <property name="dist.home"     value="${basedir}/dist"/>
+  <property name="work.home"     value="${basedir}/work"/>
+  <property name="src.home"      value="${basedir}/src"/>
+  <property name="web.home"      value="${basedir}/WebContent"/>
+
+  <target name="help">
+    <echo>You can use the following targets:</echo>
+    <echo> </echo>
+    <echo>  help    : (default) Prints this message </echo>
+    <echo>  all     : Cleans, compiles, and packages application</echo>
+    <echo>  clean   : Deletes work directories</echo>
+    <echo>  compile : Compiles servlets into class files</echo>
+    <echo>  dist    : Packages artifacts into a deployable WAR</echo>
+    <echo>  deploy  : Copy project to webapps of tomcat and start tomcat</echo>
+    <echo></echo>
+    <echo>For example, to clean, compile, package all, and deploy with Tomcat at once, run:</echo>
+    <echo>prompt> ant all </echo>
+  </target>
+
+  <!-- Define the CLASSPATH -->
+  <path id="compile.classpath">
+    <fileset dir="${tcserver.home}/bin">
+      <include name="*.jar"/>
+    </fileset>
+    <fileset dir="${jsf.lib}">
+      <include name="*.jar"/>
+    </fileset>
+    <pathelement location="${tcserver.home}/lib"/>
+    <fileset dir="${tcserver.home}/lib">
+      <include name="*.jar"/>
+    </fileset>
+  </path>
+
+  <target name="all" depends="clean,compile,dist,deploy" description="Clean work dirs, then compile and create a WAR and deploy with Tomcat"/>
+
+  <target name="clean" description="Delete old work and dist directories">
+    <delete dir="${work.home}"/>
+    <delete dir="${dist.home}"/>
+  </target>
+
+  <target name="prepare" depends="clean"
+          description="Create working dirs and copy static files to work dir">
+    <mkdir  dir="${dist.home}"/>
+    <mkdir  dir="${work.home}/WEB-INF/classes"/>
+    <!-- Copy static HTML and JSP files to work dir -->
+    <copy todir="${work.home}">
+      <fileset dir="${web.home}"/>
+    </copy>
+    <copy todir="${work.home}/WEB-INF/lib">
+      <fileset dir="${jsf.lib}">
+        <include name="*.jar"/>
+      </fileset>
+    </copy>
+  </target>
+
+  <target name="compile" depends="prepare" description="Compile Java sources and copy to WEB-INF/classes dir">
+    <javac srcdir="${src.home}"
+          destdir="${work.home}/WEB-INF/classes">
+        <classpath refid="compile.classpath"/>
+    </javac>
+    <copy  todir="${work.home}/WEB-INF/classes">
+      <fileset dir="${src.home}" excludes="**/*.java"/>
+    </copy>
+  </target>
+
+  <target name="dist" depends="compile" description="Create WAR file for binary distribution">
+    <jar jarfile="${dist.home}/${app.name}-${app.version}.war"
+         basedir="${work.home}"/>
+  </target>
+
+  <!-- Deploy web apps -->
+  <target name="copy-web-to-tomcat" depends="compile">
+    <copy todir="${tcserver.webapps}/${app.name}">
+      <fileset dir="${work.home}"/>
+    </copy>
+  </target>
+
+  <target name="start-tomcat">
+    <exec executable="${tcserver.home}/bin/startup.bat"/>
+  </target>
+
+  <target name="deploy" depends="copy-web-to-tomcat, start-tomcat" description="Copy project to webapps of tomcat and start tomcat"/>
+</project>
